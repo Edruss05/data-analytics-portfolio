@@ -1,0 +1,229 @@
+---
+title: "Lab 2: Make a plot"
+date: ""
+output: pdf_document
+---
+
+In this lab, you will get some practice using `ggplot`'s syntax for mapping variables in our data to aesthetic elements in a scatter plot.
+
+# Load libraries
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(gapminder)
+```
+
+# Examine the Gapminder Data
+Print out the gapminder data below to remind yourself of the data format and variable names (remember that you can also pull up the help file by typing `? gapminder` in the console below).
+
+```{r gapminder}
+gapminder
+```
+
+Write code to create each of the following plots described below.  You will need to make a new code chunk for each plot.  
+
+> Remember to work in small chunks and test your code (and whether your .Rmd will knit as you expect) periodically and often!
+
+## 1. GDP and Life Expectancy
+
+Create a scatter plot (using `geom_point()`) of GDP per Capita (on the x-axis) and Life Expectancy (on the y-axis). 
+
+```{r}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal()
+```
+
+
+## 2. Log scale (scatterplot)
+Adjust the plot so that the x-axis scale is in log units rather than raw GDP, and properly label the axes. 
+
+```{r}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal() + 
+  scale_x_log10()
+```
+
+
+## 3. Narrow in on the Oceanic countries
+Using the `filter()` function, narrow the scope of your scatter plot to only include countries in the Oceania continent. *Hint:* Use `==` and not `=` when asking `filter` to pick a particular value of `continent`.
+
+Here's some example code using the `filter` function:
+```{r, eval=FALSE}
+filter( gapminder, country == "United States")
+```
+or equivalently (using a pipe operator from the `dplyr` package),
+```{r, eval=FALSE}
+gapminder %>%
+  filter( country == "United States")
+```
+
+```{r}
+ggplot(filter(gapminder, continent == "Oceania")
+, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Oceania)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal() + 
+  scale_x_log10()
+```
+
+
+## 4. Overall trend
+Add an overall *linear* trend line to your plot.
+
+```{r}
+ggplot(filter(gapminder, continent == "Oceania")
+, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Oceania)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(method = "lm",se=FALSE)
+```
+
+
+## 5. Oceanic colors
+Change the color of points and trend line in your plot to colors of your choosing (don't worry about selecting these colors too carefully for this question).
+
+```{r}
+ggplot(filter(gapminder, continent == "Oceania")
+, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7, color = "turquoise") +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Oceania)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(method = "lm",se=FALSE,color = "darkcyan")
+```
+
+
+## 6. Colors by country
+Indicate different countries in your plot by different colors but keep a single overall trend line.
+
+```{r}
+ggplot(filter(gapminder, continent == "Oceania")
+, aes(x = gdpPercap, y = lifeExp, color = country)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Oceania)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  scale_color_manual(
+    values = c("Australia" = "turquoise", "New Zealand" = "seagreen")
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(method = "lm",se=FALSE,color = "darkcyan")
+```
+
+## 7. Country shapes
+Indicate different countries in your plot by different shapes (all points should be the same color).
+
+```{r}
+ggplot(filter(gapminder, continent == "Oceania")
+, aes(x = gdpPercap, y = lifeExp, shape = country)) +
+  geom_point(size = 3, alpha = 0.7, color = "turquoise") +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Oceania)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(aes(group = 1),method = "lm",se=FALSE,color = "darkcyan")
+```
+
+## 8. In the Americas
+Recreate your scatter plot from Part 6 for countries in the Americas continent. 
+
+**How many colors does `ggplot` include in its legend?  Is it easy to tell the difference between the countries in your plot?**
+A ton of colors, and its not easy to differentiate.
+
+```{r}
+ggplot(filter(gapminder, continent == "Americas")
+, aes(x = gdpPercap, y = lifeExp, color = country)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Americas)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(method = "lm",se=FALSE,color = "darkcyan")
+```
+
+## 9. US vs. the Americas
+Let's simplify this plot by singling out the US.  Use the following code, which singles out Europe in a scatterplot of life expectancy by population, as an example.
+
+```{r, eval = FALSE }
+ggplot( gapminder,
+        aes( pop,
+             lifeExp )) + 
+  geom_point( aes(color = (continent == "Europe") )) +
+  scale_x_log10() 
+```
+
+```{r}
+ggplot(filter(gapminder, continent == "Americas")
+, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7, aes(color = (country == "United States") )) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Americas)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)"
+  ) +
+  scale_color_manual(
+    values = c("TRUE" = "blue", "FALSE" = "grey")
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(method = "lm",se=FALSE,color = "black")
+```
+
+## 10. Clean up
+Tidy up this plot as best you can: e.g., give it nice x- and y- labels, as well as a title and caption.  
+
+```{r}
+ggplot(filter(gapminder, continent == "Americas")
+, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(size = 3, alpha = 0.7, aes(color = (country == "United States") )) +
+  labs(
+    title = "GDP per Capita vs. Life Expectancy (Americas)",
+    x = "GDP per Capita (USD)",
+    y = "Life Expectancy (Years)",
+    color = "Country"
+  ) +
+  scale_color_manual(
+    values = c("TRUE" = "blue", "FALSE" = "grey"),
+    labels = c("TRUE" = "United States", "FALSE" = "Other countries")
+  ) +
+  theme_minimal() + 
+  scale_x_log10() +
+  geom_smooth(method = "lm",se=FALSE,color = "black")
+```
+
+# Submission Instructions
+Knit the completed R Markdown file as a PDF document (use the "Knit" button at the top of the script editor window) and upload it to the appropriate assignment on Canvas.
