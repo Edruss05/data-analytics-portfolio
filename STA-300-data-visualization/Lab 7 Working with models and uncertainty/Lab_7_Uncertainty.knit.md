@@ -1,0 +1,178 @@
+---
+title: "Lab 7: Working with models and uncertainty"
+author: "Elijah Russell"
+date: "11/13/19"
+output: 
+  html_document:
+    number_sections: true
+---
+
+
+
+
+### Getting set up {-}
+
+The code chunk below uses the `lm` function to relate the organ donation rate to the number of vehicle road deaths per year, for each of the countries in our organ donation data set.
+
+
+
+### Model data
+Print out 5 randomly selected rows from this dataset
+
+
+``` r
+sample_n(lm_data,5)
+```
+
+```
+## # A tibble: 5 × 6
+##   country       term  estimate std.error statistic p.value
+##   <chr>         <chr>    <dbl>     <dbl>     <dbl>   <dbl>
+## 1 Belgium       roads  -0.0319    0.0356    -0.897 0.391  
+## 2 United States roads  -0.207     0.0615    -3.37  0.00708
+## 3 Italy         roads  -0.302     0.0859    -3.51  0.00562
+## 4 Ireland       roads   0.0308    0.0805     0.382 0.710  
+## 5 Australia     roads   0.0708    0.0234     3.03  0.0127
+```
+
+### Dot plot
+Create a dot plot (i.e., use `geom_point`) of model estimates by country, with country on the $y$-axis ordered by their model estimate.  These model estimates represent the average effect of road accident fatalities (per 100,000 population) on the organ donation rate (per 1 million population), over the time range of the organ donation data. **Choose a built-in theme you like (and/or customize arguments in `theme` directly) and use this for all plots in this assignment.**
+
+
+``` r
+ggplot(lm_data, aes(x=estimate, y=reorder(country,estimate), color=country)) +
+  geom_point() +
+  scale_color_manual(values=paletteer_d("ggthemes::Classic_20")) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(y="Country", x="Model Estimates")
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-4-1.png" width="75%" style="display: block; margin: auto;" />
+
+### Uncertainty via CIs
+
+Create two new columns, `lower` and `upper`, which represent the lower and upper bounds of a 95\% confidence interval (CI) and add these CIs to your plot using `geom_pointrange` (scroll through the help file to the **Aesthetics** section to see which arguments you should set in this `geom`'s `aes` function).  
+
+Recall that a $(1-\alpha)100$\% CI for these model estimates can be calculated by:
+$$ \hat{\theta} \pm z_{1-\alpha/2} \> se \left( \hat{\theta} \right)$$
+and can you use the `qnorm` function to calculate the $z_{1-\alpha/2}$ critical value.
+
+
+
+
+``` r
+ggplot(lm_data2, aes(x=estimate, y=reorder(country,estimate), color=country)) +
+  geom_point() +
+  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  scale_color_manual(values=paletteer_d("ggthemes::Classic_20")) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(y="Country", x="Model Estimates")
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-6-1.png" width="75%" style="display: block; margin: auto;" />
+
+#### Two more CIs
+Create **two** additional versions of this plot using **two** different `geom`s listed in `geom_pointrange`'s help file. Make sure these new versions still indicate what the **model estimate** is (e.g., you may want to add a `geom_point` too).
+
+
+``` r
+ggplot(lm_data2, aes(x=estimate, y=reorder(country,estimate), color=country)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = lower, xmax = upper)) +
+  scale_color_manual(values=paletteer_d("ggthemes::Classic_20")) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(y="Country", x="Model Estimates")
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-7-1.png" width="75%" style="display: block; margin: auto;" />
+
+``` r
+ggplot(lm_data2, aes(x=estimate, y=reorder(country,estimate), color=country)) +
+  geom_point() +
+  geom_linerange(aes(xmin = lower, xmax = upper)) +
+  scale_color_manual(values=paletteer_d("ggthemes::Classic_20")) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(y="Country", x="Model Estimates")
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-8-1.png" width="75%" style="display: block; margin: auto;" />
+
+### Uncertainty via the sampling distribution
+We can also incorporate the full underlying Normal distribution for each model estimate.  To simplify our plot a bit, we'll only focus on the Nordic countries.
+
+
+
+You'll need to load the `ggdist` and `distributional` packages to create these plots. Insert a chunk below to load them with the `library` function.
+
+
+
+As an example, I've created a half-eye plot for the United States below.  Edit this code to show all Nordic countries, with countries ordered by their model estimates, and choose a different color (check out this collection of [named colors in R](https://www.stat.auckland.ac.nz/%7Eihaka/downloads/R-colours-letter.pdf), compiled by one of R's original creators, Ross Ihaka).
+
+
+
+
+``` r
+lm_data %>%
+  filter(country %in% nordic) %>%
+  ggplot(aes(x = estimate, y = country)) +
+  stat_halfeye(
+    aes(dist = dist_normal(mu = estimate, sigma = std.error)),
+    fill = "steelblue3", color = "steelblue4"
+  ) +
+  theme_minimal()
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-12-1.png" width="75%" style="display: block; margin: auto;" />
+
+#### Two more distributions
+Create **two** new versions of the plot using `stat_gradientinterval` and `stat_dotsinterval`.
+
+
+``` r
+lm_data %>%
+  filter(country %in% nordic) %>%
+  ggplot(aes(x = estimate, y = country)) +
+  stat_gradientinterval(
+    aes(dist = dist_normal(mu = estimate, sigma = std.error)),
+    fill = "steelblue3", color = "steelblue4"
+  ) +
+  theme_minimal()
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-13-1.png" width="75%" style="display: block; margin: auto;" />
+
+
+``` r
+lm_data %>%
+  filter(country %in% nordic) %>%
+  ggplot(aes(x = estimate, y = country)) +
+  stat_dotsinterval(
+    aes(dist = dist_normal(mu = estimate, sigma = std.error)),
+    fill = "steelblue3", color="steelblue4"
+  ) +
+  theme_minimal()
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-14-1.png" width="75%" style="display: block; margin: auto;" />
+
+#### Finetuning the discretized halfeye plot
+For `stat_dotsinterval`, try out a couple of different values for the `quantiles` argument (e.g., `quantiles = 10`) until you find one that you think is most useful (i.e., small enough that breaking the density into discrete parts adds something, but large enough that you can distinguish between the countries).
+
+
+``` r
+lm_data %>%
+  filter(country %in% nordic) %>%
+  ggplot(aes(x = estimate, y = country)) +
+  stat_dotsinterval(
+    aes(dist = dist_normal(mu = estimate, sigma = std.error)),
+    fill = "steelblue3", color="steelblue4", quantiles=20) +
+  theme_minimal() +
+  labs(x="Model Estimates", y="Country")
+```
+
+<img src="Lab_7_Uncertainty_files/figure-html/unnamed-chunk-15-1.png" width="75%" style="display: block; margin: auto;" />
+
