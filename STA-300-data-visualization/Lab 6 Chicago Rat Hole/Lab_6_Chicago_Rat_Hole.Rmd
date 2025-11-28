@@ -1,0 +1,378 @@
+---
+title: "Lab 6: Chicago Rat Hole"
+author: "Elijah Russell"
+date: "10/30/25"
+output: 
+  html_document:
+    number_sections: true
+---
+
+We'll reproduce some figures from [Granatosky et al. (2025)'s](https://royalsocietypublishing.org/doi/10.1098/rsbl.2025.0343) recent analysis of the famed Chicago Rat Hole. **Unlike the last lab assignment, we'll use this figure as inspiration and I'm not expecting you to match their figure(s) exactly.**
+
+**Note**: We will be knitting our document to an `.html` file instead of a `.pdf` file, which should help avoid exceeding the memory (RAM) limit.
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+
+knitr::opts_chunk$set(
+  dev = "png", dpi = 150, 
+  out.width="75%", fig.align = "center",
+  fig.width = 10, fig.height = 6
+)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+species_measures <- readxl::read_excel('rsbl20250343_si_002.xlsx')
+
+```
+
+# Reproduce Figure 1's top left scatter plot
+Open up the "Figure_1" file from this paper.  The top left scatter plot in Figure 1 looks at third digit length (i.e., middle ~finger) vs. snout-to-tail base length (i.e., overall ~height).  
+
+## Basic scatter plot
+Make a scatter plot of third digit length by snout-to-tail base length, for ALL species, and let the color of the points correspond to species.
+
+```{r}
+ggplot(species_measures, aes(color= Species, y= `Third digit length (mm)`, x= `Snout-to-tail base length (mm)`)) +
+  geom_point(alpha=0.3)
+```
+
+## Basic scatter plot with boxplot
+As in Figure 1, add a boxplot for the points/measurements corresponding to the Chicago Rat Hole (ASIDE: Figure 1 doesn't use a traditional boxplot, but a different set of similar summary statistics).
+
+Increase the linewidth (`lwd`) and choose an appropriate level of transparency for your boxplot.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+summaries <- species_measures %>% 
+  filter(Species == "Chicago Rat Hole") %>%
+  summarize(
+    mean_x = mean(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    sd_x   = sd(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    mean_y = mean(`Third digit length (mm)`, na.rm = TRUE),
+    sd_y   = sd(`Third digit length (mm)`, na.rm = TRUE)
+  )
+
+  ggplot(species_measures, aes(
+    x = `Snout-to-tail base length (mm)`,
+    y = `Third digit length (mm)`,
+    color = Species
+  )) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y),
+             color = "red", size = 3.5, inherit.aes = FALSE) +
+  geom_errorbar(data = summaries,
+                aes(x = mean_x, ymin = mean_y - sd_y, ymax = mean_y + sd_y),
+                color = "red", width = 3, inherit.aes = FALSE) +
+  geom_errorbarh(data = summaries,
+                 aes(y = mean_y, xmin = mean_x - sd_x, xmax = mean_x + sd_x),
+                 color = "red", height = 0.3, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y + sd_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y - sd_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  
+  # Left and right of horizontal bar
+  geom_point(data = summaries,
+             aes(x = mean_x - sd_x, y = mean_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x + sd_x, y = mean_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  theme_minimal() +
+  labs(
+    x = "Snout-to-tail base length (mm)",
+    y = "Third digit length (mm)"
+  )
+
+```
+
+## Replace Chicago measurements with box plot
+As in Figure 1, remove the points/measurements for the Chicago Rat Hole.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+summaries <- species_measures %>% 
+  filter(Species == "Chicago Rat Hole") %>%
+  summarize(
+    mean_x = mean(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    sd_x   = sd(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    mean_y = mean(`Third digit length (mm)`, na.rm = TRUE),
+    sd_y   = sd(`Third digit length (mm)`, na.rm = TRUE)
+  )
+
+species_measures %>%
+  filter(Species != "Chicago Rat Hole") %>%
+  ggplot(aes(
+    x = `Snout-to-tail base length (mm)`,
+    y = `Third digit length (mm)`,
+    color = Species
+  )) +
+  geom_point() +
+  scale_color_brewer(palette = "Set2") +
+  
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y),
+             color = "red", size = 3.5, inherit.aes = FALSE) +
+  geom_errorbar(data = summaries,
+                aes(x = mean_x, ymin = mean_y - sd_y, ymax = mean_y + sd_y),
+                color = "red", width = 3, inherit.aes = FALSE) +
+  geom_errorbarh(data = summaries,
+                 aes(y = mean_y, xmin = mean_x - sd_x, xmax = mean_x + sd_x),
+                 color = "red", height = 0.3, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y + sd_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y - sd_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  
+  # Left and right of horizontal bar
+  geom_point(data = summaries,
+             aes(x = mean_x - sd_x, y = mean_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x + sd_x, y = mean_y),
+             color = "red", shape = 15, size = 2, inherit.aes = FALSE) +
+  theme_minimal() +
+  labs(
+    x = "Snout-to-tail base length (mm)",
+    y = "Third digit length (mm)"
+  )
+
+```
+
+**Which species appears most likely to have made the Chicago Rat Hole based on this plot?**
+Scurius Niger
+
+# Facet to create all the scatterplots
+We could replicate (copy/paste) this code for each of the remaining plots in Figure 1 - each replaces third digit length with a different measurement (e.g., headwidth), but still looks at the relationship to snout-to-tail base length
+
+A cleaner way to do this is to pivot our data to a long format and facet across the different y-axis variables.
+
+## Create a long version of the data
+Use the `pivot_longer` function (check the lecture slides, and/or the functions help file and examples listed there).
+
+```{r}
+species_long <- species_measures %>%
+  pivot_longer(
+    cols = c(`Third digit length (mm)`,
+             `Head width (mm)`,
+             `Tail base width (mm)`,
+             `Forelimb length (mm)`,
+             `Hindpaw length (mm)`,
+             `2.5cm from tail base width (mm)`),   
+    names_to = "Measurement",
+    values_to = "Value"
+  )
+```
+
+## Facet our basic scatter plot for all species
+Remember that there is a `scales` argument for `facet_wrap` that can help make all the limits on the x-axes more sensible (check the help file for `facet_wrap`).
+
+Add an appropriate level of transparency to fix the overplotting.
+
+```{r}
+ggplot(
+  species_long,
+  aes(x = `Snout-to-tail base length (mm)`, y = Value, color = Species)
+) +
+  geom_point(alpha = 0.3) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ Measurement, scales = "free_y") +
+
+  theme_minimal()
+```
+
+## Swap in the Chicago Rat Hole Boxplots
+As in Figure 1, remove the points/measurements for the Chicago Rat Hole and replace them with the relevant boxplot on each facet.
+
+Remember from our example in lecture, you may need to modify the width of the boxplot.
+
+```{r}
+summaries <- species_long %>%
+  filter(Species == "Chicago Rat Hole") %>%
+  group_by(Measurement) %>%
+  summarize(
+    mean_x = mean(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    sd_x   = sd(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    mean_y = mean(Value, na.rm = TRUE),
+    sd_y   = sd(Value, na.rm = TRUE)
+  )
+
+ggplot(
+  species_long %>% filter(Species != "Chicago Rat Hole"),
+  aes(x = `Snout-to-tail base length (mm)`, y = Value, color = Species)
+) +
+  geom_point(alpha = 0.3) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ Measurement, scales = "free_y") +
+
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y),
+             color = "red", shape = 15, size = 4, inherit.aes = FALSE) +
+  geom_errorbar(data = summaries,
+                aes(x = mean_x, ymin = mean_y - sd_y, ymax = mean_y + sd_y),
+                color = "red", width = 3, inherit.aes = FALSE) +
+  geom_errorbarh(data = summaries,
+                 aes(y = mean_y, xmin = mean_x - sd_x, xmax = mean_x + sd_x),
+                 color = "red", height = 0.3, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y + sd_y),
+             color = "red", shape = 15, size = 2.5, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x, y = mean_y - sd_y),
+             color = "red", shape = 15, size = 2.5, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x - sd_x, y = mean_y),
+             color = "red", shape = 15, size = 2.5, inherit.aes = FALSE) +
+  geom_point(data = summaries,
+             aes(x = mean_x + sd_x, y = mean_y),
+             color = "red", shape = 15, size = 2.5, inherit.aes = FALSE) +
+
+  theme_minimal()
+```
+
+**Which species appears most likely to have made the Chicago Rat Hole based on these plot?**
+Scurius Niger
+
+# Add variability across snout-to-tail base length
+All our plots so far have used the mean snout-to-tail base length, but we can represent the variability in that measurement too.
+
+## Convex Hull
+A convex hull for a set of 2D data points is the smallest (convex) polgon containing those points.  This lets us represent the `shape` of the measurements for the Chicago Rat Hole without getting overwhelmed by all the original data points.
+
+```{r, include=FALSE}
+## Example code
+
+# Calculate the hulls for each group
+hull_cyl <- mtcars %>%
+  group_by(cyl) %>%
+  slice(chull(mpg, wt))
+
+# Update the plot with a fill group, and overlay the new hulls
+ggplot(mtcars, aes(mpg, wt)) + 
+  geom_point(shape = 21) + 
+  geom_polygon(data = hull_cyl,
+               aes(fill = factor(cyl)),
+               alpha = 0.5)
+
+```
+
+```{r}
+hull_rathole <- species_long %>% 
+  filter(Species == "Chicago Rat Hole") %>%
+  group_by(Measurement) %>%
+  slice(chull(`Snout-to-tail base length (mm)`, Value))
+
+ggplot(
+  species_long %>% filter(Species != "Chicago Rat Hole"),
+  aes(x = `Snout-to-tail base length (mm)`, y = Value, color = Species)
+) +
+  geom_point(alpha = 0.3) +
+  geom_polygon(data = hull_rathole , alpha = 0.5) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ Measurement, scales = "free_y") +
+  theme_minimal()
+```
+
+### Add a measure of center
+The convex hull represents ~min/max (boundaries) of the Chicago Rat Hole's measurements; let's also add a measure of the center of this distribution.  Add a point for the mean measurement to your facetted plots.
+
+```{r}
+hull_rathole <- species_long %>% 
+  filter(Species == "Chicago Rat Hole") %>%
+  group_by(Measurement) %>%
+  slice(chull(`Snout-to-tail base length (mm)`, Value))
+
+mean_points <- species_long %>% 
+  filter(Species == "Chicago Rat Hole") %>%
+  group_by(Measurement) %>%
+  summarize(
+    mean_x = mean(`Snout-to-tail base length (mm)`, na.rm = TRUE),
+    mean_y = mean(Value, na.rm = TRUE)
+  )
+
+ggplot(
+  species_long %>% filter(Species != "Chicago Rat Hole"),
+  aes(x = `Snout-to-tail base length (mm)`, y = Value, color = Species)
+) +
+  geom_point(alpha = 0.3) +
+  geom_polygon(data = hull_rathole, alpha = 0.5) +
+  geom_point(data = mean_points, aes(x= mean_x, y= mean_y, color = "Rat Hole Mean"), color = "black", alpha = 0.7 ) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ Measurement, scales = "free_y") +
+  theme_minimal()
+```
+
+## 2D Kernel Density Estimate (KDE)
+The convex hull and means above measure the spread and center of the 2D distribution of the Chicago Rat Hole's measurement.  Let's now consider replacing these summary statistics with estimates of the shape of the full 2D distribution, using the `geom_density2d` function which computes a kernel density estimate (KDE) of the observed (empirical) 2D distribution.
+
+```{r, include=FALSE}
+## Example code
+
+ggplot(mtcars, aes(mpg, wt)) + 
+  geom_point(shape = 21) + 
+  geom_density2d( aes(col = factor(cyl)),
+                  alpha = 0.5)
+
+```
+
+```{r}
+ggplot() +
+  geom_point(
+    data = species_long %>% filter(Species != "Chicago Rat Hole"),
+    aes(x = `Snout-to-tail base length (mm)`, y = Value, color = Species), 
+    alpha = 0.3
+  ) +
+  geom_density2d(
+    data = species_long %>% filter(Species == "Chicago Rat Hole"),
+    aes(x = `Snout-to-tail base length (mm)`, y = Value),
+    color = "blueviolet",
+    alpha = 0.5
+  ) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ Measurement, scales = "free_y") +
+  theme_minimal()
+```
+
+## Convex hull vs 2D KDE
+Do the bounds of our KDE's correspond to the convex hulls we created earlier?  Plot them both to see.
+
+```{r}
+hull_rathole <- species_long %>% 
+  filter(Species == "Chicago Rat Hole") %>%
+  group_by(Measurement) %>%
+  slice(chull(`Snout-to-tail base length (mm)`, Value))
+
+ggplot() +
+  geom_point(
+    data = species_long %>% filter(Species != "Chicago Rat Hole"),
+    aes(x = `Snout-to-tail base length (mm)`, y = Value, color = Species), 
+    alpha = 0.3
+  ) +
+  geom_polygon(data = hull_rathole, aes(x = `Snout-to-tail base length (mm)`, y = Value, color = "Chicago Rat Hole"), alpha = 0.5) +
+  geom_density2d(
+    data = species_long %>% filter(Species == "Chicago Rat Hole"),
+    aes(x = `Snout-to-tail base length (mm)`, y = Value),
+    color = "blueviolet",
+    alpha = 0.5
+  ) +
+  scale_color_brewer(palette = "Paired") +
+  facet_wrap(~ Measurement, scales = "free_y") +
+  theme_minimal()
+```
+
+**Do the KDEs match the convex hulls?  Which do you prefer?**
+Yes, the KDEs match the convex hulls pretty well. I prefer the convex hulls.
+I feel like the convex halls reduce visual cluttering in the graphic.
