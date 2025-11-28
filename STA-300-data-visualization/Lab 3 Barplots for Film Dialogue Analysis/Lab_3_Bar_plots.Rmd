@@ -1,0 +1,147 @@
+---
+title: "Lab 3: Barplots for Film Dialogue Analysis"
+author: "Elijah Russell"
+date: "9/25/25"
+output: pdf_document
+---
+
+### Load data and libraries
+I've included some code below to load, restructure, and clean the data we'll use. This chunk also includes the chunk option `echo=FALSE` which hides it in your final submission. *Don't edit the code in this chunk.* 
+
+```{r load-clean-data, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+# Load the separate datasets
+fellowship <- read_csv("data/The_Fellowship_Of_The_Ring.csv")
+tt <- read_csv("data/The_Two_Towers.csv")
+rotk <- read_csv("data/The_Return_Of_The_King.csv")
+
+# bind_rows() stacks data frames on top of each other
+lotr_wide <- bind_rows(fellowship, tt, rotk) %>% 
+  # Make the Film column a categorical variable (factor), and put it in the
+  # order the categories appear (so the films are in the correct order)
+  mutate(Film = fct_inorder(Film))
+
+# Make this wide data into long/tidy data
+lotr <- lotr_wide %>% 
+  pivot_longer(cols = c(Female, Male), 
+               names_to = "Gender", values_to = "Words")
+```
+
+### 1. Print out the `lotr` dataset
+The `lotr` dataset tracks **the number of words spoken by characters** in the three films that make up the Lord of the Rings (LOTR) trilogy: 1. The Fellowship of the Ring, 2. The Two Towers, 3. The Return of the King.   
+```{r}
+lotr
+```
+
+### 2. Words spoken by race
+Make a bar plot of the total number of words spoken by each race across all three movies (i.e., summing up across all three movies). *No stacked barplots allowed*.  Look carefully at the data before beginning.
+
+*Which of the two functions for making bar plots, `geom_bar` or `geom_col`, is most appropriate here? Why?*
+"geom_col" because "geom_col" is better when you have an x and a y, "geom_bar" is better for when you just have x and count of x.
+```{r}
+ggplot(data = lotr,aes(x=Race, weight=Words))+
+  geom_bar(fill = "darkgoldenrod")
+```
+
+### 3. Words spoken by race again
+Remake your plot using the other `geom_` function for making bar plots.
+
+*Does one race's speech dominate the films?*
+```{r}
+ggplot(data = lotr,aes(x=Race, y=Words))+
+  geom_col(fill = "darkgoldenrod")
+```
+
+### 4. Gender and film
+Does a certain gender dominate a movie? (lolz of course it does, but still, make a bar plot to look at this). *No stacked barplots allowed*. In fact, make four versions of this plot:
+- filling by Gender
+```{r}
+ggplot(data = lotr,aes(x=Film, y=Words, fill=Gender))+
+  geom_col(position = "dodge")
+```
+
+- filling by Film
+```{r}
+ggplot(data = lotr,aes(x=Gender, y=Words, fill=Film))+
+  geom_col(position = "dodge")
+```
+
+- faceting by Gender
+```{r}
+ggplot(data = lotr,aes(x=Film, y=Words))+
+  geom_col(fill = "darkgoldenrod") +
+  facet_wrap(~ Gender)
+```
+
+- faceting by Film
+```{r}
+ggplot(data = lotr,aes(x=Gender, y=Words))+
+  geom_col(fill = "darkgoldenrod") +
+  facet_wrap(~ Film)
+```
+
+*Which bar plot do you prefer? Briefly explain why.*          I prefer the plot filled by film, because you see all the data on one graph and can easily compare dialogue amounts by film and by gender.                                    
+
+### 5. Race and film
+Make a bar plot of the number of words spoken by each race in each of the three movies.  Repeat your experiments from above (changing fill or facet by either variable) and include only your favorite plot.
+
+```{r}
+ggplot(data = lotr,aes(x=Race, y=Words, fill=Film))+
+  geom_col(position = "dodge")
+```
+
+*Does the dominant race differ across the three movies?*
+Yes, the first movie is primarily hobbit dialogue, although elves play a larger role than in the latter two. The second movie is primarily human dialogue, and the third is an almost even split between hobbits and men.
+
+### 6. Race and gender and film
+You need to show `Race`, `Gender`, and `Film` at the same time, but you only have two possible aesthetics (`x` and `fill`), so you'll also need to facet by the third. Play around with different combinations (e.g. try `x = Race`, then `x = Film`) until you find one that tells the clearest story.
+
+Make your plot look as nice as possible by adding a title, subtitle, caption and any other changes you find helpful.
+
+```{r}
+ggplot(data = lotr,aes(x=Race, y=Words, fill=Gender))+
+  geom_col(position = "dodge") +
+  facet_wrap(~ Film) + 
+  scale_fill_manual( values = c("Male" = "darkgoldenrod", "Female" = "brown")) +
+  labs(title= "Dialogue in LOTR", subtitle="Analyzed by Race, Gender, and Film", caption= "Words spoken by Lord of the Rings characters across the main trilogy")
+```
+
+*List three takeaways (e.g., patterns, trends, comparisons) about race and gender in the LOTR films*
+1. The dialogue is male dominated
+2. The dialogue is hobbit and human dominated
+3. The Elvish dialogue is split almost evenly between male and female
+
+### 7. More films
+Outside of the Lord of the Rings trilogy, you may have seem some coverage of film dialogue analyses (and visualizations) by gender (and other attributes) in popular media.  Some analyses are much more detailed than the ones we've looked at here.  For example, the [Bechdel test](https://en.wikipedia.org/wiki/Bechdel_test) tracks whether (or more generally, how often) two women in a film or text have a conversation about something other than a man. 
+
+More similar to our look at counts of spoken words, [The Pudding](https://pudding.cool/2017/03/film-dialogue/) analyzed over 2,000 screenplays in 2016 and created some interesting data visualizations.  Scroll through the article and notice how the visualizations at the top of the page change as you go. Slide your cursor along the blue-red bar that describes the in the "Only High-Grossing Films: Ranked in the Top 2,500 by US Box Office"
+
+*Find one blue-ish and one red-ish film that you've watched and report on the percentage of words spoken by female characters, according to their analysis.*
+A blue-ish film is The Jungle Book, and a red-ish film is Inside Out.
+
+### 8. Recreate The Pudding's bar plot
+Look at the The Pudding's plots labelled "Screenplay Dialogue, Broken-down by Gender".  We can recreate this in ggplot for the LOTR films.
+
+The code below creates *a new dataset* that sums up the words spoken by each gender in each film (across races).  Use this to create a vertical (e.g., rotated 90 degrees) version of the stacked bar plots as in The Pudding.  Then, try adding `coord_flip()` and `geom_hline( yintercept = .5, lty=2)` to your plot to finalize your reproduction.
+
+```{r}
+lotr_across_race <- lotr %>% 
+  group_by( Film, Gender) %>% 
+  summarize( Words = sum(Words) ) %>% 
+  mutate( Words_prop = Words / sum(Words) )
+```
+```{r}
+lotr_across_race
+```
+
+```{r}
+ggplot(data = lotr_across_race,aes(x=Film, y=Words_prop, fill=Gender))+
+  geom_col() +
+  coord_flip() +
+  geom_hline( yintercept = .5, lty=2) +
+  labs(y="Words")
+  
+```
+
+
