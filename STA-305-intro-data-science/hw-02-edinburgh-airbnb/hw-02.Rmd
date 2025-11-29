@@ -1,0 +1,82 @@
+---
+title: "HW 01 - Airbnb listings in Edinburgh"
+author: "Elijah Russell"
+date: "09/19/2025"
+output: pdf_document
+---
+
+## Load packages and data
+
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(dsbox)
+library(dplyr)
+install.packages("ggridges")
+library(ggridges)
+library(ggplot2)
+```
+
+## Exercises
+
+### Exercise 1
+
+The data set has `r nrow(edibnb)` observations (rows).
+
+### Exercise 2
+
+Each row represents an airbnb
+
+### Exercise 3
+
+I chose a 3 column wide wrapped grid because it allowed me to show the most amount of data in the smallest space.
+
+```{r prices-neighbourhoods,fig.width=10,fig.height=10}
+ggplot(data = edibnb, mapping = aes(x = price)) +
+  geom_histogram(binwidth = 25) +
+  facet_wrap(~neighbourhood,scales = "free",ncol=3)
+```
+
+### Exercise 4
+
+All of the top 5 neighbourhoods have relatively similar price distributions. New Town is the most expensive in terms of both mean and median, followed by Old Town. However, Stockbridge and West End have higher starting prices, while Stockbridge also has the lowest ending price.
+
+```{r top-5-median}
+top5_neighbourhoods <- edibnb %>%
+  group_by(neighbourhood) %>%
+  summarise(median_price = median(price, na.rm = TRUE)) %>%
+  arrange(desc(median_price)) %>%
+  slice_head(n = 5)
+```
+
+```{r top-5-median-plot}
+edibnb %>%
+  filter(neighbourhood %in% top5_neighbourhoods$neighbourhood) %>%
+  ggplot(aes(x = price, y = neighbourhood, fill = neighbourhood)) +
+  geom_density_ridges(scale = 1, alpha = 0.7, quantile_lines = TRUE, quantiles = 2) 
+```
+
+```{r top-5-median-summary-stats}
+summary_stats <- edibnb %>%
+  filter(neighbourhood %in% top5_neighbourhoods$neighbourhood) %>%
+  group_by(neighbourhood) %>%
+  summarise(
+    min = min(price, na.rm = TRUE),
+    mean = mean(price, na.rm = TRUE),
+    median = median(price, na.rm = TRUE),
+    sd = sd(price, na.rm = TRUE),
+    IQR = IQR(price, na.rm = TRUE),
+    max = max(price, na.rm = TRUE),
+    .groups = "drop"
+  )
+summary_stats
+```
+
+### Exercise 5
+
+For the most part the airbnbs in Edinburgh are rated highly consistently. Some neighbourhoods like Leith and Old Town appear to have more negative reviews than other neighbourhoods, but still have overwhelmingly positive reviews.
+
+```{r review-scores-rating}
+ggplot(edibnb, aes(x = neighbourhood, y = review_scores_rating, fill = neighbourhood)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3)
+  
+```
