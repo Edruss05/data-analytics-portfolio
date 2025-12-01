@@ -1,0 +1,125 @@
+---
+title: "Lab 8: County-level maps of Kentucky's early childhood readiness"
+author: "Elijah Russell"
+date: "12/01/25"
+output:
+  html_document
+---
+
+In this lab, you'll get some experience creating chloropleth maps in `ggplot` using county-level data collected in [Kentucky's Early Childhood Profile](https://kystats.ky.gov/Latest/ECP).  This dataset contains kindergarten readiness scores (overall and broken down by five composite domains, e.g., social emotional skills), ALL STARS ratings for preschool and daycare quality, as well as general measures of family and health information (e.g., childhood poverty rates, preterm births, households where English is not the primary langauge, etc.) across all 120 counties in Kentucky.  See the [technical documentation](https://bit.ly/Technical_Notes_ECP) for more details on variable definitions.
+
+## Set up
+The code in this chunk sets global options for how all code chunks will be rendered in your knitted document. This chunk also includes the chunk option `echo=FALSE` which hides it in your final submission. *Don't edit the code in this chunk.* 
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+knitr::opts_chunk$set(
+  dev = "png", dpi = 75, 
+  out.width="75%", fig.align = "center",
+  fig.width = 10, fig.height = 4
+)
+```
+
+### Load libraries and data
+The chunks below load the `tidyverse` library (with chunk options to avoid inlcuding unneccesary messages in our knitted document) and import data from one sheet of the Excel file which contains all data from Kentucky's 2025 Early Childhood Profile.
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+```
+
+```{r, echo = FALSE}
+kydata <- readxl::read_excel( "ECP_PAF.xlsx",
+                              sheet = "Poverty" )
+```
+
+Print out a few rows from the `kydata` object to check out the column names and data structure:
+
+```{r}
+kydata
+```
+
+## The poverty variable
+
+As a check, **print out all rows in the dataset for Fayette county**:
+
+```{r}
+kydata %>%
+  filter(County=="Fayette")
+```
+
+This dataset contains **three** rows for each county, corresponding to the percent of households living below three different multipliers of the poverty level's household income.  For example, in 2025, the [federal poverty level](https://www.healthcare.gov/glossary/federal-poverty-level-fpl/) for a family of 4 is a yearly income of \$32,150.  So for each household of four, we are comparing their reported income to 100% of \$32,150, 150% of \$32,150, and 200% of \$32,150 (and similarly, across all reported household sizes).
+
+**Create a subset** of the `kydata` object that only includes the percentage of households living below 100% of the poverty level.
+
+```{r}
+below100poverity <- kydata %>%
+  filter(Group=="100% Poverty Level")
+```
+
+## Draw a map of KY counties
+
+**Edit the code below** to save a dataset that contains all the data used to draw a map of KY counties.
+
+```{r, message = FALSE}
+library(maps)
+kymap <- map_data( "county", 
+                   region = "kentucky" )
+```
+
+Use `geom_polygon` to create an empty map:
+
+```{r}
+ggplot(kymap, aes(long, lat, group=group)) +
+  geom_polygon(fill="white", color="black") +
+  theme_void()
+```
+
+## Merge on the county-level data
+
+Use `left_join` to merge the county-level data in **your subset** of `kydata` onto the dataset you extracted with `map_data` above.  Print out 5 random rows to check that your merge was successful.
+
+```{r}
+below100poverity <- below100poverity %>%
+  mutate(County = str_to_lower(County))
+
+ky_merged <- left_join(kymap, below100poverity, 
+                       by = c("subregion" = "County"))
+
+ky_merged %>% sample_n(5)
+```
+
+## Childhood poverty's choropleth map 
+
+Use the `Poverty Percentage` variable to color the states of your map.  Use a `scale` function of your choice to adjust the color scheme and clean up your plot (e.g., modify the theme, add a title, caption, nice axes labels, etc.).  
+
+For color scheme ideas, take a look at [Section 11.2.2 - 11.2.3](https://ggplot2-book.org/scales-colour.html#sec-particular-palettes) and [Section 11.3.1](https://ggplot2-book.org/scales-colour.html#sec-particular-palettes) of the ggplot2 textbook.
+
+```{r}
+ggplot(ky_merged, aes(long, lat, group=group, fill=`Poverty Percentage`)) +
+  geom_polygon(color="black") +
+  scale_fill_gradient(low = "lightskyblue", high = "midnightblue") +
+  theme_void()
+```
+
+## Draw a chloropleth map for a variable of your choosing
+
+**Edit the code below** to import data from another sheet of the provided Excel file (Hint: download and open the file in Excel to check sheet names and see which variables are included in each sheet). Some sheets include yearly observations; for your map, you can either choose a year of interest or summarize across years.
+
+```{r}
+kydata_new <- readxl::read_excel( "ECP_PAF.xlsx",
+                                  sheet = "Language" )
+
+kydata_new <- kydata_new %>%
+  mutate(County = str_to_lower(County))
+
+ky_merged_new <- left_join(kymap, kydata_new, 
+                       by = c("subregion" = "County"))
+```
+
+Create a new chloropeth map with a different variable of your choosing, using a nice color scheme and theme, with appropriate captions and labels.  Be sure to check your imported data to appropriately reference column names in your plot; at least one sheet includes a typo in a column name.
+
+```{r}
+ggplot(ky_merged_new, aes(long, lat, group=group, fill=`Non English Speaking Percentgae`)) +
+  geom_polygon(color="black") +
+  scale_fill_gradient(low = "lightskyblue", high = "midnightblue") +
+  theme_void() +
+  labs(fill="Non English Speaking\nPercentage", title="Language in Kentucky", subtitle="Non english speaking population percentage by county")
+```
