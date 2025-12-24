@@ -1,0 +1,73 @@
+---
+title: "HW 02 - Road traffic accidents"
+author: "Elijah Russell"
+date: "9/26/25"
+output: github_document
+---
+
+## Load packages and data
+
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(dsbox)
+```
+
+## Exercises
+
+### Exercise 1
+
+The dataset has `r nrow(accidents)` observations.
+
+### Exercise 2
+
+Each row represents an accident.
+
+### Exercise 3
+
+```{r accidents-through-day}
+library(dplyr)
+library(ggplot2)
+
+accidents <- accidents %>%
+  mutate(
+    day_type = case_when(
+      day_of_week %in% c("Saturday", "Sunday") ~ "Weekend", TRUE ~ "Weekday"
+                        )
+        )
+
+ggplot(accidents, aes(x = time, fill = severity)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("Fatal" = "plum4",
+                               "Serious" = "deepskyblue4",
+                               "Slight" = "yellow3")) +
+  facet_wrap(~day_type, ncol=1) +
+  labs(x="Time of Day", y="Density")
+```
+
+### Exercise 4
+
+Remove this text, and add your answer for Exercise 4 here.
+
+```{r accident-choropleth}
+library(ggplot2)
+library(ggmap)
+library(scico)
+
+register_stadiamaps(key = "f2ffdbbf-0f24-49ae-99ff-332a83b69a44")
+
+edin_bbox <- c(left = -3.3, bottom = 55.9, right = -3.1, top = 56.0)
+
+edin_map <- get_stadiamap(edin_bbox, zoom = 12, maptype = "stamen_toner_lite")
+
+ggmap(edin_map) +
+  geom_point(data=accidents, 
+             aes(x = longitude, y = latitude, color = weather, size = vehicles),
+             alpha = 0.5
+            ) + 
+  scale_color_manual(
+    values = c("Fine + no high winds"="lightgreen", "Fine + high winds"="gold", "Raining + high winds"="orangered4", "Raining + no high winds"="orange", "Snowing + no high winds"="chocolate1", "Snowing + high winds"="darkred", "Fog or mist"="steelblue", "Unknown"="grey", "Other"="grey57"),
+    breaks = c("Fine + no high winds", "Fine + high winds", "Raining + no high winds", "Snowing + no high winds", "Raining + high winds", "Snowing + high winds", "Fog or mist", "Other", "Unknown")) +
+  scale_size_area(max_size = 4) +
+  labs(title="Accidents by Location",subtitle="Displayed by weather and number of vehicles involved", color="Weather") +
+  theme_void()
+```
