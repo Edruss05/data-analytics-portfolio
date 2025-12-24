@@ -1,0 +1,251 @@
+---
+title: "Lab 9: Arranging plots and telling a story"
+author: "Elijah Russell"
+date: "12/18/25"
+output:
+  html_document
+---
+
+In this lab, we will recreate 
+   [Figure 29.12](https://clauswilke.com/dataviz/telling-a-story.html#fig:tech-stocks-repetitive) 
+from Wilke's Data Visualization textbook. *Be sure to click this link and reference it as you work through the lab*
+
+
+## Load data and libraries
+I've included some code below to set global chunk options and load the libraries we'll use. *Don't edit the code in this chunk.* 
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+
+knitr::opts_chunk$set(
+  dev = "png", dpi = 150, 
+  out.width="70%", fig.align = "center",
+  fig.width = 10, fig.asp = 0.618 # the golden ratio
+)
+
+library(tidyverse)
+library(gridExtra)
+library(cowplot)
+```
+
+```{r, message=FALSE, warning=FALSE}
+tech_stocks <- read_csv("https://wilkelab.org/SDS375/datasets/tech_stocks.csv")
+```
+
+### Print out five randomly selected rows
+
+```{r}
+tech_stocks %>% 
+  slice_sample(n=5)
+```
+
+## Make a plot of all companies' stock prices over time
+Use the `price_indexed` variable.
+
+```{r}
+ggplot(tech_stocks, aes(x=date,y=price_indexed, color = company)) +
+  geom_line()
+```
+
+## Facebook only
+Now we'll work on recreating the story of Facebook's rapid growth over other comparator tech stocks.  First, plot only Facebook's stock price over time and *pick a color* of your choosing.
+
+Use the following arguments to the `theme` function to match the version in Wilke's Figure 29.12 (for simplicity, don't worry about recreating the secondary axis trick here):
+```{r, eval = FALSE, results='hide'}
+  theme_minimal() +
+  theme( legend.position = "none",
+         text = element_text(size = 20),
+         panel.grid.major.x = element_blank(),
+         panel.grid.minor.x = element_blank() )
+```
+```{r}
+tech_stocks %>%
+  filter(company == "Facebook") %>%
+  ggplot(aes(x=date, y=price)) +
+  geom_line(color = "dodgerblue4") +
+  geom_text(
+    data = tech_stocks %>%
+      filter(company == "Facebook") %>%
+      slice_max(date, n = 1),
+    aes(label = company),
+    size = 5,
+    hjust = -0.1,
+    show.legend = FALSE
+  ) +
+  theme_minimal() +
+  theme( legend.position = "none",
+         text = element_text(size = 20),
+         panel.grid.major.x = element_blank(),
+         panel.grid.minor.x = element_blank(),
+         panel.grid.minor.y = element_blank()) +
+  labs(x="year", y="stock price (USD)") +
+  coord_cartesian(clip = "off") +
+  theme(plot.margin = margin(6.5, 45, 6.5, 6.5))
+```
+
+Save this plot as an object, e.g. `plot_fb <- ggplot( ...`.
+
+```{r}
+plot_fb <- tech_stocks %>%
+  filter(company == "Facebook") %>%
+  ggplot(aes(x=date, y=price)) +
+  geom_line(color = "dodgerblue4") +
+  geom_text(
+    data = tech_stocks %>%
+      filter(company == "Facebook") %>%
+      slice_max(date, n = 1),
+    aes(label = company),
+    size = 5,
+    hjust = -0.1,
+    show.legend = FALSE
+  ) +
+  theme_minimal() +
+  theme( legend.position = "none",
+         text = element_text(size = 20),
+         panel.grid.major.x = element_blank(),
+         panel.grid.minor.x = element_blank(),
+         panel.grid.minor.y = element_blank()) +
+  labs(x="year", y="stock price (USD)") +
+  coord_cartesian(clip = "off") +
+  theme(plot.margin = margin(6.5, 45, 6.5, 6.5))
+```
+
+## Percent growth
+The code below calculates the percent growth for each stock since Facebook's stock first went public.  
+
+```{r}
+final_prices <- filter(tech_stocks, date == ymd("2017-05-31"))
+
+perc_increase <- final_prices %>%
+  mutate(
+    perc = 100*(price-index_price)/index_price,
+    perc_label = paste0(round(perc), "%") ) %>%
+  arrange(perc)
+```
+
+Use the `perc_increase` dataset to create a barplot.  As in [Figure 29.12](https://clauswilke.com/dataviz/telling-a-story.html#fig:tech-stocks-repetitive), 
+- use a color scheme that highlights Facebook's bar 
+- use `geom_text` to label the actual percentage for each company (*Hint*: add a `position = position_nudge( x = -1)` argument and play around with the nudge amount), 
+- order the companies by their percent growth (*Hint*: see Lecture 8), and
+- copy/edit the theme settings from our last plot to match Figure 29.12's bar plot.
+
+```{r}
+ggplot(perc_increase, aes(x=perc, y=reorder(company, perc), fill=company)) +
+  geom_col(alpha=0.7) +
+  scale_fill_manual(values=c(Microsoft="grey58", Apple="grey58", Alphabet="grey58", Facebook="dodgerblue4")) +
+  theme_minimal() +
+  geom_text(aes(label=perc_label),
+            color="white",
+            position = position_nudge(x=-35)) +
+  theme( legend.position = "none",
+         text = element_text(size = 20),
+         panel.grid.major.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         panel.grid.minor.x = element_blank()) +
+  labs(x="percent increase", y="")
+```
+
+Save your barplot as an object.
+
+```{r}
+plot_bar <- ggplot(perc_increase, aes(x=perc, y=reorder(company, perc), fill=company)) +
+  geom_col(alpha=0.7) +
+  scale_fill_manual(values=c(Microsoft="grey58", Apple="grey58", Alphabet="grey58", Facebook="dodgerblue4")) +
+  theme_minimal() +
+  geom_text(aes(label=perc_label),
+            color="white",
+            position = position_nudge(x=-35)) +
+  theme( legend.position = "none",
+         text = element_text(size = 20),
+         panel.grid.major.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         panel.grid.minor.x = element_blank()) +
+  labs(x="percent increase", y="")
+```
+
+## Combine the plots and adjust chunk options
+Use `grid.arrange` to combine *the two plots you created above* (Facebook only and the bar plot) in a 2x1 grid (i.e., in a column with two rows).  
+*And* adjust the `fig.asp` (figure aspect ratio = height/width) chunk option to ensure your plots don't end up too stretched or squished in your knitted .html file.  
+(Aside: See more recommendations for figure sizing via chunk options from the [R for Data Science](https://r4ds.had.co.nz/graphics-for-communication.html#figure-sizing) textbook.)
+
+```{r, fig.height = 6, fig.asp = .5, include=FALSE}
+grid.arrange(plot_fb,plot_bar, ncol=1)
+```
+
+Use the `plot_grid` function from `cowplot` to combine your figures and add labels. 
+(Aside: see [more vignettes/tutorials](https://wilkelab.org/cowplot/articles/index.html) for other ways `cowplot` can help you combine multiple plots, including adding a logo or watermark, and advanced configurations).
+
+```{r, include=FALSE}
+plot_grid(plot_fb, plot_bar,
+           ncol = 1,
+           labels = c('a','b'),
+           label_size = 12 )
+```
+
+### Export your plot
+Use the `ggsave` function to create a `.png` image file of your combined plot.  You'll save the output from our combining function as an object, and then feed that to `ggsave`.  The help file for `ggsave` contains many other useful options, including changing the file type (e.g., .pdf, .jpeg, etc.), dimensions, and resolution.
+
+```{r}
+both_plots_cowplot <- plot_grid(plot_fb, plot_bar, 
+           ncol = 1,
+           labels = c('a', 'b'), 
+           label_size = 12 ) 
+```
+
+```{r, eval = FALSE}
+ggsave( "FB_growth.png", 
+        both_plots_cowplot,
+        width = 10, height = 10, units = "in", dpi = 300 )
+```
+
+After you run this chunk, check to see that your file shows up in the bottom right window of RStudio.
+
+## Inserting images into an Rmd
+We can insert images into our knitted .Rmd file just like code chunks, but the syntax is different:
+
+![Figure 1: Facebook logo (This is a caption)](facebook_logo.png){width=10%}
+
+We may also want to add an image directly on our plot, as below.  I've copy/pasted this code from the cowplot tutorial which uses a different image file. **Play with the arguments so that the logo shows up nicely on our plot.** Adjust the `x, y` positions (per `draw_image`'s help file, these coordinates run from 0 to 1 with the point (0,0) being the lower left corner) and decrease the `width` and `height` arguments.
+
+```{r, include=FALSE}
+logo_file <- "facebook_logo.png"
+
+ggdraw(both_plots_cowplot) +
+  draw_image(logo_file, 
+             x = 1, y = 0.1, 
+             hjust = 1, vjust = 1, 
+             width = 0.1, height = 0.1)
+```
+
+We can also use the `annotation_raster` function to display the image in its own plot.
+
+```{r, fig.height=1, fig.asp = 1, out.width = "10%", include= FALSE}
+img <- png::readPNG("facebook_logo.png") 
+
+logo_plot <- ggplot( data.frame( x = seq(1,5,length=10), 
+                                 y = seq(1,7,length=10)), 
+                     aes(x, y)) +
+  annotation_raster( img, 
+                     xmin = 1, xmax = 5, 
+                     ymin = 1, ymax = 7) +
+  geom_point(alpha=0) +
+  theme_void()
+
+logo_plot
+```
+
+Use `cowplot`'s `plot_grid` function to **create a combined plot that includes the logo image, and at least one of the plots you created above**. Use the `rel_widths` or `rel_heights` argument to adjust relative width or heights of each plot.  It's ok if it looks a bit silly for this assignment; hopefully you can imagine how this could be potentially useful in your final project.
+
+
+```{r}
+logo_file <- "facebook_logo.png"
+
+ggdraw(both_plots_cowplot) +
+  draw_image(logo_file, 
+             x = 1, y = 0.15, 
+             hjust = 1, vjust = 1, 
+             width = 0.1, height = 0.1)
+```
+
+
+
+
