@@ -1,0 +1,136 @@
+---
+title: "HW 04 - What should I major in?"
+author: "Elijah Russell"
+date: "10/03/25"
+output: pdf_document
+---
+
+## Load packages and data
+
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(scales)
+library(fivethirtyeight)
+library(moments)
+```
+
+## Exercises
+
+### Exercise 1
+
+```{r}
+college_recent_grads %>%
+  arrange(desc(sharewomen)) %>%
+  select(major,total,sharewomen) %>%
+  top_n(3)
+```
+
+### Exercise 2
+We often choose the median, rather than the mean, to describe the typical income of a group of people because the median is not as affected by outliers, extreme values, and skewed data as the mean is.
+
+### Exercise 3
+
+```{r}
+ggplot(data = college_recent_grads, mapping = aes(x = median)) +
+  geom_histogram(fill="green4",color="darkgreen",binwidth=5000) + 
+  labs(y="Count",x="Median Income ($)")
+```
+
+I went with a binwidth of 5000 because while a binwidth of 1000 showed the data with more precision it was also harder to read and interpret.
+
+### Exercise 4
+
+```{r}
+college_recent_grads %>%
+  summarise(min = min(median), 
+            q1 = quantile(median, probs = 0.25), 
+            med = median(median),
+            q3 = quantile(median, probs = 0.75),
+            max = max(median),
+            iqr = q3 - q1,
+            lwr = q1 - 1.5 * iqr,
+            upr = q3 + 1.5 * iqr,
+            outliers = sum(median < lwr | median > upr),
+            mean = mean(median), 
+            sd = sd(median),
+            skew = skewness(median))
+```
+This distrubution shows a moderately wide distribution of values, with a mean of about 40,151 and noticeable right skew due to high outliers. The median (36,000) is lower than the mean, reinforcing the skew. Overall, the data are centered around the mid-30,000s but stretched upward by a few extreme values.
+
+### Exercise 5
+
+```{r}
+ggplot(data = college_recent_grads, mapping = aes(x = median)) +
+  geom_histogram(fill="green4",color="darkgreen",binwidth=5000) +
+  facet_wrap(~major_category) +
+  labs(y="Count",x="Median Income ($)")
+```
+
+### Exercise 6
+
+```{r}
+college_recent_grads %>%
+  group_by(major_category) %>%
+  summarise(median = median(median)) %>%
+  arrange(desc(median)) %>%
+  top_n(1)
+```
+Engineering has the highest typical median income.
+
+### Exercise 7
+
+```{r}
+college_recent_grads %>%
+  count(major_category) %>%
+  arrange(n) %>%
+  slice_min(order_by = n, n=1)
+```
+
+### Exercise 8
+
+```{r}
+stem_categories <- c("Biology & Life Science",
+                     "Computers & Mathematics",
+                     "Engineering",
+                     "Physical Sciences")
+
+college_recent_grads <- college_recent_grads %>%
+  mutate(major_type = ifelse(major_category %in% stem_categories, "stem", "not stem"))
+
+college_recent_grads %>%
+  filter(
+    major_type == "stem",
+    median <= median(median)
+  ) %>%
+  arrange(desc(median)) %>%
+  select(major,p25th,median,p75th)
+```
+
+### Exercise 9
+
+```{r}
+ggplot(college_recent_grads,aes(x=median,y=sharewomen,color=major_type)) +
+  geom_point() +
+  scale_color_manual(values=c("stem"="green4","not stem"="red3")) +
+  scale_x_continuous(labels=comma) +
+  scale_y_continuous(labels=percent) +
+  labs(x="Median Income ($)",y="Percentage Women",color="Major")
+```
+The majors that are not stem majors typically have a low median income. The higher percentage of women a major has the more likely it is that it is not a stem major and has a low median income.  
+
+### Exercise 10
+Which categories of majors have the highest and lowest unemployment rates?
+
+```{r}
+college_recent_grads %>%
+  group_by(major_category, major_type) %>%
+  summarise(median_unemp = median(unemployment_rate), .groups = "drop") %>%
+  ggplot(aes(x = reorder(major_category, -median_unemp), 
+             y = median_unemp, 
+             fill = major_type)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("stem" = "green4", "not stem" = "red3")) +
+  labs(x = "Major Category", y = "Median Unemployment Rate", fill = "Major Type") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
