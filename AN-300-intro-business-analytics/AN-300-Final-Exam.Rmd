@@ -1,0 +1,47 @@
+---
+title: "AN-300-Final-Exam"
+author: "Elijah Russell"
+date: "2025-12-16"
+output: pdf_document
+---
+
+```{r, echo=TRUE, message=FALSE, error=TRUE}
+library(tidyverse)
+library(readxl)
+
+CountryData <- read_excel("CountryData_F2025.xlsx")
+ForecastingData <- read_excel("ForecastingProblems.xlsx", sheet = "Shipping")
+```
+
+```{r}
+ggplot(CountryData,aes(x=FemaleLiteracy,y=Birthrate)) +
+  geom_point()
+```
+
+```{r}
+ggplot(CountryData,aes(x=FemaleLifeExp,y=Birthrate)) +
+  geom_point()
+```
+
+```{r}
+ggplot(CountryData,aes(x=MaleLiteracy,y=Birthrate)) +
+  geom_point()
+```
+
+```{r}
+model <- lm(Birthrate ~ FemaleLiteracy + FemaleLifeExp, data = CountryData)
+summary(model)
+```
+
+
+```{r}
+model2 <- lm(Birthrate ~ FemaleLiteracy + FemaleLifeExp + MaleLiteracy + GDPPerCapita + MaleLifeExp, data = CountryData)
+summary(model2)
+```
+
+
+```{r}
+model3 <- lm(ShippingCostMean ~ Q1 + Q2 + Q3, data = ForecastingData)
+summary(model3)
+```
+
