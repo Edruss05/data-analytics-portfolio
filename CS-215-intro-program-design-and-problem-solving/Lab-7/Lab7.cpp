@@ -4,7 +4,7 @@ Project: Lab7
 Purpose: Calculates the execution score for the artistic gymnastics. The execution score, determined by a six-judge Panel, 
          begins at 10 and deductions are made for errors and faults in technique, execution and artistry/composition. 
          Each judge independently determines his/her score. The highest and lowest scores are dropped, 
-         and the gymnast’s Execution Score is the average of the remaining four judges’ scores.
+         and the gymnastâ€™s Execution Score is the average of the remaining four judgesâ€™ scores.
 Author:  Elijah Russell
  */
 
